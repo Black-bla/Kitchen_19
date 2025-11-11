@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
+const Sentry = require('@sentry/node');
 const app = express();
 
 // Body parser with reasonable default limit; override with BODY_LIMIT env var
@@ -67,6 +68,9 @@ app.use('/api/ai', aiRoutes);
 app.use('/api/social', socialRoutes);
 app.use('/api/marketplace', marketplaceRoutes);
 app.use('/api/admin', adminRoutes);
+
+// The error handler must be registered before any other error middleware and after all controllers
+Sentry.setupExpressErrorHandler(app);
 
 // Error handler (should be last)
 const errorHandler = require('./middleware/error.middleware');
