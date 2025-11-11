@@ -51,6 +51,8 @@ const notificationRoutes = require('./routes/notification.routes');
 const aiRoutes = require('./routes/ai.routes');
 const socialRoutes = require('./routes/social.routes');
 const marketplaceRoutes = require('./routes/marketplace.routes');
+const paymentRoutes = require('./routes/payment.routes');
+const testRoutes = require('./routes/test.routes');
 const adminRoutes = require('./routes/admin.routes');
 
 app.use('/api/auth', authRoutes);
@@ -67,6 +69,8 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/social', socialRoutes);
 app.use('/api/marketplace', marketplaceRoutes);
+app.use('/api/payments', paymentRoutes);
+app.use('/api/test', testRoutes);
 app.use('/api/admin', adminRoutes);
 
 // The error handler must be registered before any other error middleware and after all controllers

@@ -123,7 +123,7 @@ module.exports = {
           break;
       }
 
-      return { success: true };
+      return { success: true, event: event.type };
     } catch (error) {
       console.error('Webhook handling failed:', error);
       return { success: false, error: error.message };
