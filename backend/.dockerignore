@@ -1,0 +1,14 @@
+node_modules
+npm-debug.log
+.env
+.env.local
+.env.*.local
+.DS_Store
+.git
+coverage
+dist
+logs
+*.log
+src/**/*.test.js
+src/**/__tests__
+*.tgz
