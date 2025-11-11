@@ -20,6 +20,11 @@ app.use(cors(corsOptions));
 // Health route
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 
+// Test error route for Sentry
+app.get('/api/test-error', (req, res) => {
+	throw new Error('Test error for Sentry monitoring');
+});
+
 // Root route - helpful for browsers visiting the base URL
 app.get('/', (req, res) => {
 	res.json({
