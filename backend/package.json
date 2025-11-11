@@ -31,13 +31,17 @@
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "express-rate-limit": "^6.8.0",
+    "firebase-admin": "^13.6.0",
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.0",
     "mongoose": "^8.16.0",
     "multer": "^2.0.2",
     "node-tesseract-ocr": "^2.2.1",
+    "nodemailer": "^7.0.10",
+    "openai": "^6.8.1",
     "socket.io": "^4.8.1",
-    "streamifier": "^0.1.1"
+    "streamifier": "^0.1.1",
+    "stripe": "^19.3.0"
   },
   "devDependencies": {
     "cross-env": "^7.0.3",
