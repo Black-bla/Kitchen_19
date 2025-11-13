@@ -39,6 +39,7 @@
     "node-tesseract-ocr": "^2.2.1",
     "nodemailer": "^7.0.10",
     "openai": "^6.8.1",
+    "qrcode": "^1.5.4",
     "socket.io": "^4.8.1",
     "streamifier": "^0.1.1",
     "stripe": "^19.3.0"

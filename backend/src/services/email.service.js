@@ -4,7 +4,7 @@ const nodemailer = require('nodemailer');
 const createTransporter = () => {
   // For development, you can use services like Gmail, SendGrid, etc.
   // For production, use environment variables
-  return nodemailer.createTransporter({
+  return nodemailer.createTransport({
     host: process.env.SMTP_HOST || 'smtp.gmail.com',
     port: process.env.SMTP_PORT || 587,
     secure: false, // true for 465, false for other ports
@@ -18,6 +18,16 @@ const createTransporter = () => {
 module.exports = {
   sendEmail: async ({ to, subject, html, text }) => {
     try {
+      // Check if SMTP credentials are configured
+      if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+        console.warn('SMTP credentials not configured, email not sent');
+        return {
+          success: false,
+          error: 'SMTP credentials not configured',
+          message: `Would send email to ${to} with subject: ${subject}`
+        };
+      }
+
       const transporter = createTransporter();
 
       const mailOptions = {

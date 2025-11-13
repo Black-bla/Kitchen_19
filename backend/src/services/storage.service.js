@@ -50,5 +50,32 @@ module.exports = {
       bytes: result.bytes,
       resource_type: result.resource_type
     };
+  },
+
+  deleteFile: async (urlOrPublicId) => {
+    try {
+      // If it's a full URL, extract the public_id
+      let publicId = urlOrPublicId;
+      if (urlOrPublicId.includes('cloudinary.com')) {
+        // Extract public_id from Cloudinary URL
+        const urlParts = urlOrPublicId.split('/');
+        const uploadIndex = urlParts.findIndex(part => part === 'upload');
+        if (uploadIndex !== -1 && uploadIndex < urlParts.length - 1) {
+          // Remove file extension to get public_id
+          const filename = urlParts[urlParts.length - 1];
+          publicId = filename.split('.')[0];
+          // Include folder if present
+          if (uploadIndex < urlParts.length - 2) {
+            const folder = urlParts.slice(uploadIndex + 1, -1).join('/');
+            publicId = `${folder}/${publicId}`;
+          }
+        }
+      }
+      
+      const result = await cloudinary.uploader.destroy(publicId);
+      return result;
+    } catch (err) {
+      throw err;
+    }
   }
 };

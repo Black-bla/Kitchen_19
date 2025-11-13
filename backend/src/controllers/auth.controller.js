@@ -3,6 +3,8 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Student = require('../models/Student');
 const ocr = require('../services/ocr.service');
+const { validate } = require('../middleware/validation.middleware');
+const { authSchemas } = require('../utils/validators');
 
 const signToken = (user) => {
   const payload = { id: user._id.toString(), role: user.role };
@@ -11,87 +13,88 @@ const signToken = (user) => {
 
 module.exports = {
   // Minimal OAuth-like endpoint: accepts provider/authId/email and returns JWT
-  oauth: async (req, res) => {
-    try {
-      const { authProvider, authId, email, role = 'student' } = req.body;
-      if (!authProvider || !authId || !email) return res.status(400).json({ error: 'Missing fields' });
+  oauth: [
+    validate(authSchemas.oauth),
+    async (req, res) => {
+      try {
+        const { authProvider, authId, email, role } = req.body;
 
-      let user = await User.findOne({ authProvider, authId });
-      if (!user) {
-        user = await User.create({ authProvider, authId, email, role });
+        let user = await User.findOne({ authProvider, authId });
+        if (!user) {
+          user = await User.create({ authProvider, authId, email, role });
+        }
+        const token = signToken(user);
+        return res.json({ token, user: { id: user._id, email: user.email, role: user.role } });
+      } catch (err) {
+        console.error(err);
+        return res.status(500).json({ success: false, error: 'Authentication failed' });
       }
-      const token = signToken(user);
-      return res.json({ token, user: { id: user._id, email: user.email, role: user.role } });
-    } catch (err) {
-      console.error(err);
-      return res.status(500).json({ error: 'oauth failed' });
     }
-  },
+  ],
 
   // Clerk login: server verifies Clerk session token server-side and exchanges for app JWT
-  clerkLogin: async (req, res) => {
-    try {
-      // Accept either Authorization: Bearer <clerk-session-token> or { clerkToken }
-      const authHeader = req.headers.authorization;
-      const clerkToken = authHeader && authHeader.startsWith('Bearer ')
-        ? authHeader.split(' ')[1]
-        : req.body && req.body.clerkToken;
-
-      if (!clerkToken) {
-        return res.status(400).json({ error: 'Missing clerk session token' });
-      }
-
-      // Attempt server-side verification using clerk.service if available
-      let clerkPayload = null;
+  clerkLogin: [
+    validate(authSchemas.clerkLogin),
+    async (req, res) => {
       try {
-        const clerkService = require('../services/clerk.service');
-        clerkPayload = await clerkService.verifySession(clerkToken);
-      } catch (verr) {
-        // If verification fails, log and return 401
-        console.error('Clerk verification failed', verr.message || verr);
-        return res.status(401).json({ error: 'Invalid Clerk session token' });
-      }
+        const { clerkToken } = req.body;
 
-      // Extract user info from clerkPayload. The exact shape depends on Clerk API.
-      // Try common fields but fall back to body if provided.
-      const clerkUser = clerkPayload?.user || clerkPayload?.data || {};
-      const clerkId = clerkUser?.id || clerkUser?.user_id || req.body.clerkId;
-      const email = clerkUser?.email || clerkUser?.primary_email_address || req.body.email;
-      const firstName = clerkUser?.first_name || clerkUser?.firstName || req.body.firstName;
-      const lastName = clerkUser?.last_name || clerkUser?.lastName || req.body.lastName;
-      const role = req.body.role || 'student';
-
-      if (!clerkId || !email) {
-        return res.status(400).json({ error: 'Verified Clerk payload missing id or email' });
-      }
-
-      let user = await User.findOne({ authProvider: 'clerk', authId: clerkId });
-      if (!user) {
-        user = await User.create({ authProvider: 'clerk', authId: clerkId, email, role });
-      } else if (!user.email && email) {
-        user.email = email;
-        await user.save();
-      }
-
-      // Sync student profile for student role
-      if (role === 'student' && (firstName || lastName)) {
-        const student = await Student.findOne({ userId: user._id });
-        if (student) {
-          if (firstName) student.firstName = firstName;
-          if (lastName) student.lastName = lastName;
-          await student.save();
-        } else {
-          await Student.create({ userId: user._id, firstName: firstName || '', lastName: lastName || '' });
+        if (!clerkToken) {
+          return res.status(400).json({ error: 'Missing clerk session token' });
         }
-      }
 
-      const token = signToken(user);
-      return res.json({ token, user: { id: user._id, email: user.email, role: user.role } });
-    } catch (err) {
-      console.error(err);
-      return res.status(500).json({ error: 'clerk login failed' });
+        // Attempt server-side verification using clerk.service if available
+        let clerkPayload = null;
+        try {
+          const clerkService = require('../services/clerk.service');
+          clerkPayload = await clerkService.verifySession(clerkToken);
+        } catch (verr) {
+          // If verification fails, log and return 401
+          console.error('Clerk verification failed', verr.message || verr);
+          return res.status(401).json({ error: 'Invalid Clerk session token' });
+        }
+
+        // Extract user info from clerkPayload. The exact shape depends on Clerk API.
+        // Try common fields but fall back to body if provided.
+        const clerkUser = clerkPayload?.user || clerkPayload?.data || {};
+        const clerkId = clerkUser?.id || clerkUser?.user_id || req.body.clerkId;
+        const email = clerkUser?.email || clerkUser?.primary_email_address || req.body.email;
+        const firstName = clerkUser?.first_name || clerkUser?.firstName || req.body.firstName;
+        const lastName = clerkUser?.last_name || clerkUser?.lastName || req.body.lastName;
+        const role = req.body.role || 'student';
+
+        if (!clerkId || !email) {
+          return res.status(400).json({ error: 'Verified Clerk payload missing id or email' });
+        }
+
+        let user = await User.findOne({ authProvider: 'clerk', authId: clerkId });
+        if (!user) {
+          user = await User.create({ authProvider: 'clerk', authId: clerkId, email, role });
+        } else if (!user.email && email) {
+          user.email = email;
+          await user.save();
+        }
+
+        // Sync student profile for student role
+        if (role === 'student' && (firstName || lastName)) {
+          const student = await Student.findOne({ userId: user._id });
+          if (student) {
+            if (firstName) student.firstName = firstName;
+            if (lastName) student.lastName = lastName;
+            await student.save();
+          } else {
+            await Student.create({ userId: user._id, firstName: firstName || '', lastName: lastName || '' });
+          }
+        }
+
+        const token = signToken(user);
+        return res.json({ token, user: { id: user._id, email: user.email, role: user.role } });
+      } catch (err) {
+        console.error(err);
+        return res.status(500).json({ error: 'clerk login failed' });
+      }
     }
-  },
+  ],
 
   // Upload admission letter, parse, and create/update Student record
   uploadAdmission: async (req, res) => {
