@@ -1,15 +1,30 @@
 const OpenAI = require('openai');
 
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || process.env.OPENROUTER_API_KEY,
-  baseURL: process.env.OPENROUTER_API_KEY ? 'https://openrouter.ai/api/v1' : undefined
-});
+// Initialize OpenAI client lazily
+let openai = null;
+const getOpenAIClient = () => {
+  if (!openai && (process.env.OPENAI_API_KEY || process.env.OPENROUTER_API_KEY)) {
+    openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY || process.env.OPENROUTER_API_KEY,
+      baseURL: process.env.OPENROUTER_API_KEY ? 'https://openrouter.ai/api/v1' : undefined
+    });
+  }
+  return openai;
+};
 
 module.exports = {
   // Ask AI a question
   ask: async (prompt, options = {}) => {
     try {
+      const client = getOpenAIClient();
+      if (!client) {
+        return {
+          success: false,
+          answer: 'AI service not configured. Please set OPENAI_API_KEY or OPENROUTER_API_KEY.',
+          error: 'No API key configured'
+        };
+      }
+
       const {
         model = 'gpt-3.5-turbo',
         maxTokens = 1000,
@@ -17,7 +32,7 @@ module.exports = {
         systemMessage = 'You are a helpful assistant for a student management platform.'
       } = options;
 
-      const completion = await openai.chat.completions.create({
+      const completion = await client.chat.completions.create({
         model,
         messages: [
           { role: 'system', content: systemMessage },

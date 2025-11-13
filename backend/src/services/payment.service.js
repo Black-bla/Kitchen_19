@@ -1,7 +1,14 @@
 const Stripe = require('stripe');
 const User = require('../models/User');
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_...');
+// Lazy initialization of Stripe
+let stripe = null;
+const getStripe = () => {
+  if (!stripe && process.env.STRIPE_SECRET_KEY) {
+    stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+  }
+  return stripe;
+};
 
 const PLANS = {
   basic: { priceId: process.env.STRIPE_BASIC_PRICE_ID, amount: 9.99 },
@@ -12,6 +19,11 @@ module.exports = {
   // Create subscription
   subscribe: async (userId, plan = 'basic') => {
     try {
+      const stripeClient = getStripe();
+      if (!stripeClient) {
+        throw new Error('Stripe not configured');
+      }
+
       const user = await User.findById(userId);
       if (!user) {
         throw new Error('User not found');
@@ -24,9 +36,9 @@ module.exports = {
       // Create or retrieve Stripe customer
       let customer;
       if (user.stripeCustomerId) {
-        customer = await stripe.customers.retrieve(user.stripeCustomerId);
+        customer = await stripeClient.customers.retrieve(user.stripeCustomerId);
       } else {
-        customer = await stripe.customers.create({
+        customer = await stripeClient.customers.create({
           email: user.email,
           metadata: { userId: userId.toString() }
         });
@@ -34,7 +46,7 @@ module.exports = {
       }
 
       // Create subscription
-      const subscription = await stripe.subscriptions.create({
+      const subscription = await stripeClient.subscriptions.create({
         customer: customer.id,
         items: [{
           price: PLANS[plan].priceId
@@ -63,13 +75,18 @@ module.exports = {
   // Cancel subscription
   cancelSubscription: async (userId) => {
     try {
+      const stripeClient = getStripe();
+      if (!stripeClient) {
+        throw new Error('Stripe not configured');
+      }
+
       const user = await User.findById(userId);
       if (!user || !user.stripeCustomerId) {
         throw new Error('User or subscription not found');
       }
 
       // Find active subscription
-      const subscriptions = await stripe.subscriptions.list({
+      const subscriptions = await stripeClient.subscriptions.list({
         customer: user.stripeCustomerId,
         status: 'active'
       });
@@ -80,7 +97,7 @@ module.exports = {
 
       // Cancel subscription
       const subscription = subscriptions.data[0];
-      await stripe.subscriptions.update(subscription.id, {
+      await stripeClient.subscriptions.update(subscription.id, {
         cancel_at_period_end: true
       });
 
@@ -133,6 +150,11 @@ module.exports = {
   // Get subscription status
   getSubscriptionStatus: async (userId) => {
     try {
+      const stripeClient = getStripe();
+      if (!stripeClient) {
+        throw new Error('Stripe not configured');
+      }
+
       const user = await User.findById(userId);
       if (!user) {
         throw new Error('User not found');
@@ -142,7 +164,7 @@ module.exports = {
         return { isPremium: false, status: 'no_subscription' };
       }
 
-      const subscriptions = await stripe.subscriptions.list({
+      const subscriptions = await stripeClient.subscriptions.list({
         customer: user.stripeCustomerId,
         status: 'active'
       });
