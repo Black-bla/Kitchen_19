@@ -1,7 +1,18 @@
 const Joi = require('joi');
+const mongoose = require('mongoose');
 
-// Custom validators
-const objectId = Joi.string().regex(/^[0-9a-fA-F]{24}$/).message('Invalid ObjectId format');
+// Custom validators - accept either 24-hex string or Mongoose ObjectId
+const objectIdRegex = /^[0-9a-fA-F]{24}$/;
+const objectId = Joi.any().custom((value, helpers) => {
+  if (typeof value === 'string' && objectIdRegex.test(value)) return value;
+  if (value && mongoose && mongoose.Types && mongoose.Types.ObjectId && value instanceof mongoose.Types.ObjectId) {
+    return value.toString();
+  }
+  if (value && value.toString && typeof value.toString === 'function' && objectIdRegex.test(value.toString())) {
+    return value.toString();
+  }
+  return helpers.error('any.invalid');
+}, 'ObjectId validation');
 
 // Reusable validation patterns
 const password = Joi.string()
@@ -199,7 +210,7 @@ const attendanceSchemas = {
   createSession: Joi.object({
     group: objectId.required(),
     subject: objectId.required(),
-    lecturer: objectId.required(),
+    lecturer: objectId,
     classType: Joi.string().valid('physical', 'online').default('physical'),
     date: Joi.date().default(() => new Date()),
     location: Joi.object({
@@ -212,11 +223,9 @@ const attendanceSchemas = {
   }),
 
   markAttendance: Joi.object({
-    sessionId: objectId.required(),
-    location: Joi.object({
-      latitude: Joi.number().min(-90).max(90),
-      longitude: Joi.number().min(-180).max(180)
-    })
+    attendanceId: objectId.required(),
+    lat: Joi.number().min(-90).max(90),
+    lon: Joi.number().min(-180).max(180)
   }),
 
   update: Joi.object({

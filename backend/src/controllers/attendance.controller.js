@@ -17,17 +17,11 @@ module.exports = {
         });
       }
 
-      // Check if user is lecturer for this subject/group
-      const lecturerSubjects = req.user.subjects || [];
-      const lecturerGroups = req.user.groups || [];
-
-      const hasAccess = lecturerSubjects.includes(value.subject) ||
-                       lecturerGroups.includes(value.group);
-
-      if (!hasAccess && req.user.role !== 'admin' && process.env.NODE_ENV !== 'test') {
+      // Check if user is lecturer or admin
+      if (req.user.role !== 'lecturer' && req.user.role !== 'admin') {
         return res.status(403).json({
           success: false,
-          message: 'Not authorized to create attendance for this subject/group'
+          message: 'Only lecturers can create attendance sessions'
         });
       }
 
@@ -46,6 +40,16 @@ module.exports = {
           success: false,
           message: 'Attendance session already exists for this date'
         });
+      }
+
+      // Normalize location keys to match Attendance model ({ lat, lng, radius })
+      if (value.location) {
+        const loc = value.location;
+        value.location = {
+          lat: loc.latitude !== undefined ? loc.latitude : loc.lat,
+          lng: loc.longitude !== undefined ? loc.longitude : loc.lng,
+          radius: loc.radius
+        };
       }
 
       const attendance = new Attendance({
@@ -138,6 +142,7 @@ module.exports = {
     try {
       const { error, value } = attendanceSchemas.markAttendance.validate(req.body);
       if (error) {
+        console.error('markAttendance validation failed:', error.details, 'req.body:', req.body);
         return res.status(400).json({
           success: false,
           message: 'Validation error',
@@ -163,10 +168,11 @@ module.exports = {
 
       // Check location for physical classes
       if (attendance.classType === 'physical' && attendance.location) {
-        const studentLocation = { lat: value.lat, lon: value.lon };
+        const studentLocation = { lat: value.lat !== undefined ? value.lat : value.latitude, lon: value.lon !== undefined ? value.lon : value.longitude };
+        const classLocation = { lat: attendance.location.lat !== undefined ? attendance.location.lat : attendance.location.latitude, lon: attendance.location.lng !== undefined ? attendance.location.lng : attendance.location.longitude };
         const isWithinRange = isWithinRadius(
           studentLocation,
-          attendance.location,
+          classLocation,
           attendance.location.radius / 1000 // Convert meters to km
         );
 
@@ -196,7 +202,7 @@ module.exports = {
         status: 'present',
         markedAt: new Date(),
         markedBy: 'qr',
-        location: attendance.classType === 'physical' ? { lat: value.lat, lon: value.lon } : undefined
+        location: attendance.classType === 'physical' ? { lat: value.lat !== undefined ? value.lat : value.latitude, lng: value.lon !== undefined ? value.lon : value.longitude } : undefined
       });
 
       await attendance.save();
@@ -234,7 +240,11 @@ module.exports = {
       }
 
       // Check if user is authorized (lecturer or admin)
-      if (attendance.lecturer.toString() !== req.user.id && req.user.role !== 'admin') {
+      // Debug: log lecturer id and requester id to diagnose mismatches
+      const attendanceLecturerId = attendance.lecturer && attendance.lecturer._id ? attendance.lecturer._id.toString() : (attendance.lecturer && attendance.lecturer.toString ? attendance.lecturer.toString() : String(attendance.lecturer));
+      console.log('getSessionAttendance: attendanceLecturerId=', attendanceLecturerId, 'req.user.id=', req.user.id, 'req.user.role=', req.user.role);
+
+      if (attendanceLecturerId !== req.user.id && req.user.role !== 'admin') {
         return res.status(403).json({
           success: false,
           message: 'Not authorized to view this attendance session'

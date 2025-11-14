@@ -1,6 +1,6 @@
 const Assignment = require('../models/Assignment');
 const { assignmentSchemas } = require('../utils/validators');
-const { uploadFile, deleteFile } = require('../services/storage.service');
+const storage = require('../services/storage.service');
 const { send } = require('../services/notification.service');
 
 module.exports = {
@@ -20,8 +20,8 @@ module.exports = {
       let attachments = [];
       if (req.files && req.files.length > 0) {
         for (const file of req.files) {
-          const result = await uploadFile(file.buffer, 'assignments');
-          attachments.push(result.secure_url);
+          const result = await storage.uploadFile(file, 'assignments');
+          attachments.push(result.secure_url || result.url);
         }
       }
 
@@ -132,8 +132,8 @@ module.exports = {
       let attachments = assignment.attachments || [];
       if (req.files && req.files.length > 0) {
         for (const file of req.files) {
-          const result = await uploadFile(file.buffer, 'assignments');
-          attachments.push(result.secure_url);
+          const result = await storage.uploadFile(file, 'assignments');
+          attachments.push(result.secure_url || result.url);
         }
       }
 
@@ -179,7 +179,7 @@ module.exports = {
       // Delete attachments from Cloudinary
       if (assignment.attachments && assignment.attachments.length > 0) {
         for (const url of assignment.attachments) {
-          await deleteFile(url);
+          if (storage.deleteFile) await storage.deleteFile(url);
         }
       }
 
@@ -187,7 +187,7 @@ module.exports = {
       if (assignment.submissions && assignment.submissions.length > 0) {
         for (const submission of assignment.submissions) {
           if (submission.fileUrl) {
-            await deleteFile(submission.fileUrl);
+            if (storage.deleteFile) await storage.deleteFile(submission.fileUrl);
           }
         }
       }
@@ -244,14 +244,14 @@ module.exports = {
 
       let fileUrl = null;
       if (req.file) {
-        const result = await uploadFile(req.file.buffer, 'submissions');
-        fileUrl = result.secure_url;
+        const result = await storage.uploadFile(req.file, 'submissions');
+        fileUrl = result.secure_url || result.url;
       }
 
       if (existingSubmission) {
         // Update existing submission
         if (existingSubmission.fileUrl) {
-          await deleteFile(existingSubmission.fileUrl);
+          if (storage.deleteFile) await storage.deleteFile(existingSubmission.fileUrl);
         }
         existingSubmission.submittedAt = new Date();
         existingSubmission.fileUrl = fileUrl;

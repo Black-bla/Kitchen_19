@@ -126,7 +126,7 @@ describe('Assignment Controller', () => {
 
       await assignmentController.create(mockReq, mockRes);
 
-      expect(uploadFile).toHaveBeenCalledWith(mockFile.buffer, 'assignments');
+      expect(uploadFile).toHaveBeenCalledWith(mockFile, 'assignments');
       expect(Assignment).toHaveBeenCalledWith({
         ...validData,
         attachments: ['https://cloudinary.com/test.pdf'],
@@ -441,7 +441,14 @@ describe('Assignment Controller', () => {
         submissions: [{ student: 'student123' }]
       };
 
-      Assignment.findById.mockResolvedValue(mockAssignment);
+      // Mock the chained query to return a Promise resolving to the assignment
+      const mockQuery = {
+        populate: jest.fn().mockReturnThis(),
+        exec: jest.fn().mockResolvedValue(mockAssignment)
+      };
+      // Make the query thenable by adding then method
+      mockQuery.then = jest.fn().mockImplementation((resolve) => resolve(mockAssignment));
+      Assignment.findById.mockReturnValue(mockQuery);
 
       mockReq.params.id = 'assignment123';
 

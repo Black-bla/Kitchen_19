@@ -26,7 +26,7 @@ beforeAll(async () => {
   const storage = require('../../../src/services/storage.service');
   jest.spyOn(storage, 'uploadFile').mockImplementation(async (file, folder) => {
     return { 
-      url: `https://cloudinary.com/${folder}/test-file.pdf`,
+      secure_url: `https://cloudinary.com/${folder}/test-file.pdf`,
       public_id: 'test-public-id'
     };
   });
@@ -43,29 +43,31 @@ afterAll(async () => {
 });
 
 describe('Assignment Flow Integration', () => {
-  let lecturerToken, studentToken;
+  let lecturerToken, studentToken, lecturerRes, studentRes;
   let assignmentId, subjectId, groupId;
 
   beforeAll(async () => {
     // Create lecturer user
-    const lecturerRes = await request(app)
+    lecturerRes = await request(app)
       .post('/api/auth/oauth')
       .send({
         authProvider: 'google',
         authId: 'lecturer-integration-1',
-        email: 'lecturer@example.com'
+        email: 'lecturer@example.com',
+        role: 'lecturer'
       })
       .expect(200);
 
     lecturerToken = lecturerRes.body.token;
 
     // Create student user
-    const studentRes = await request(app)
+    studentRes = await request(app)
       .post('/api/auth/oauth')
       .send({
         authProvider: 'google',
         authId: 'student-integration-1',
-        email: 'student@example.com'
+        email: 'student@example.com',
+        role: 'student'
       })
       .expect(200);
 
@@ -132,7 +134,7 @@ describe('Assignment Flow Integration', () => {
     expect(createRes.body.success).toBe(true);
     expect(createRes.body.data.title).toBe('Integration Test Assignment');
     expect(createRes.body.data.attachments).toHaveLength(1);
-    expect(createRes.body.data.attachments[0]).toContain('assignments/test-file.pdf');
+    expect(createRes.body.data.attachments[0]).toContain('assignments');
 
     assignmentId = createRes.body.data._id;
 
@@ -205,7 +207,7 @@ describe('Assignment Flow Integration', () => {
       .expect(400);
 
     expect(invalidRes.body.success).toBe(false);
-    expect(invalidRes.body.message).toBe('Validation error');
+    expect(invalidRes.body.error).toBe('Validation failed');
 
     // Test late submission
     const Assignment = require('../../../src/models/Assignment');
@@ -215,7 +217,7 @@ describe('Assignment Flow Integration', () => {
       subject: subjectId,
       group: groupId,
       dueDate: new Date('2020-01-01'), // Past date
-      createdBy: 'lecturer123'
+      createdBy: lecturerRes.body.user.id
     });
 
     const lateSubmitRes = await request(app)

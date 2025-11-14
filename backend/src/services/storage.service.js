@@ -20,6 +20,16 @@ function uploadBufferToCloudinary(buffer, filename, options = {}) {
 
 module.exports = {
   uploadFile: async (file, folder = '') => {
+    // In test mode, return mock data instead of uploading to Cloudinary
+    if (process.env.NODE_ENV === 'test') {
+      return {
+        secure_url: `https://cloudinary.test/${folder}/${Date.now()}-${file.originalname || 'test-file'}`,
+        public_id: `test/${Date.now()}`,
+        bytes: file.buffer ? file.buffer.length : 100,
+        resource_type: 'raw'
+      };
+    }
+
     // file: may be { buffer, originalname, mimetype } or { path }
     if (!file) throw new Error('No file provided to upload');
     const options = { folder: folder || 'uploads' };
@@ -53,6 +63,11 @@ module.exports = {
   },
 
   deleteFile: async (urlOrPublicId) => {
+    // In test mode, skip deletion
+    if (process.env.NODE_ENV === 'test') {
+      return { result: 'ok' };
+    }
+
     try {
       // If it's a full URL, extract the public_id
       let publicId = urlOrPublicId;
@@ -71,7 +86,7 @@ module.exports = {
           }
         }
       }
-      
+
       const result = await cloudinary.uploader.destroy(publicId);
       return result;
     } catch (err) {

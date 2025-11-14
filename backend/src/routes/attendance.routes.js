@@ -24,13 +24,13 @@ router.post(
 );
 
 // Get attendance records for session (lecturer view)
-router.get('/session/:id', ctrl.getSessionAttendance);
+router.get('/session/:id', auth, ctrl.getSessionAttendance);
 
 // Get student's attendance records
-router.get('/student', ctrl.getStudentAttendance);
+router.get('/student', auth, ctrl.getStudentAttendance);
 
 // Generate attendance report
-router.get('/report', ctrl.generateReport);
+router.get('/report', auth, ctrl.generateReport);
 
 // Update attendance record (manual marking)
 router.put(

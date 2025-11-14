@@ -48,7 +48,8 @@ describe('Attendance Flow Integration', () => {
       .send({
         authProvider: 'google',
         authId: 'attendance-lecturer-1',
-        email: 'attendance-lecturer@example.com'
+        email: 'attendance-lecturer@example.com',
+        role: 'lecturer'
       })
       .expect(200);
 
@@ -60,7 +61,8 @@ describe('Attendance Flow Integration', () => {
       .send({
         authProvider: 'google',
         authId: 'attendance-student-1',
-        email: 'attendance-student@example.com'
+        email: 'attendance-student@example.com',
+        role: 'student'
       })
       .expect(200);
 
