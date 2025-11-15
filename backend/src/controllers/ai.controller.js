@@ -1,8 +1,27 @@
+
 const ocr = require('../services/ocr.service');
+const aiService = require('../services/ai.service');
 const Student = require('../models/Student');
+const { validate } = require('../middleware/validation.middleware');
+const { aiSchemas } = require('../utils/validators');
 
 module.exports = {
-  chat: (req, res) => res.json({ reply: 'ai chat placeholder' }),
+  // AI chat endpoint using ai.service
+  chat: [
+    validate(aiSchemas.chat),
+    async (req, res) => {
+      try {
+        const { prompt, context } = req.body;
+        if (!prompt) return res.status(400).json({ error: 'Missing prompt' });
+        const user = req.user;
+        const reply = await aiService.chat({ prompt, context, user });
+        return res.json({ reply });
+      } catch (err) {
+        console.error('ai.chat error', err);
+        return res.status(500).json({ error: 'AI chat failed' });
+      }
+    }
+  ],
 
   processAdmission: async (req, res) => {
     try {
