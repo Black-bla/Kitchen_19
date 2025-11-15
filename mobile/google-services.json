@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "36777896114",
+    "project_id": "kitchen19-app",
+    "storage_bucket": "kitchen19-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:36777896114:android:433e9bff06f6d3cac1c1ab",
+        "android_client_info": {
+          "package_name": "com.munguti.mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDbf8F3QQ0wWr9mMGgN3YxEmQHNerLC6ds"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

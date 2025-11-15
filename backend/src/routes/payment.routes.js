@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const auth = require('../middleware/auth.middleware');
 const paymentService = require('../services/payment.service');
+const pesapalController = require('../controllers/pesapal.controller');
 
 // Initialize Stripe lazily
 let stripe = null;
@@ -82,5 +83,10 @@ router.post('/webhook', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+// Pesapal payment endpoints
+router.post('/pesapal/initiate', pesapalController.initiate);
+router.get('/pesapal-callback', pesapalController.callback);
+router.post('/pesapal-notify', pesapalController.notify);
 
 module.exports = router;
