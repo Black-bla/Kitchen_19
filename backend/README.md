@@ -2,6 +2,24 @@
 
 This document contains quick deployment guidance for the backend (Express + MongoDB + Socket.io).
 
+## Security & Best Practices
+- All sensitive keys and secrets must be stored in `.env` (never committed to git).
+- `.env` and all log files are in `.gitignore`.
+- Rate limiting and logging middleware are enabled by default.
+- All input is validated using Joi or express-validator in controllers/middleware.
+- CORS and Helmet are enabled for security.
+
+## API Usage
+- All endpoints are prefixed with `/api/`.
+- Auth, user, payment, and other routes are documented in the code and OpenAPI (if available).
+- Health check: `GET /api/health` returns `{ status: 'ok' }`.
+- Error responses are JSON with `error` field.
+
+## Deployment
+- See below for Docker, DigitalOcean, and PM2 instructions.
+- Set all required environment variables in your deployment environment.
+- For Pesapal, ensure your callback URL is public and matches the one registered with Pesapal.
+
 Minimum requirements
 - Node.js >= 18
 - MongoDB (Atlas recommended)

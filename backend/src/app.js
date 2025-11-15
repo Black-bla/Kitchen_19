@@ -3,6 +3,8 @@ const cors = require('cors');
 const helmet = require('helmet');
 const Sentry = require('@sentry/node');
 const app = express();
+const rateLimiter = require('./middleware/rateLimiter.middleware');
+const logger = require('./middleware/logger.middleware');
 
 // Body parser with reasonable default limit; override with BODY_LIMIT env var
 app.use(express.json({ limit: process.env.BODY_LIMIT || '1mb' }));
@@ -17,6 +19,11 @@ const corsOptions = {
 	optionsSuccessStatus: 200
 };
 app.use(cors(corsOptions));
+
+// Logging middleware
+app.use(logger);
+// Rate limiting middleware (apply globally or to sensitive routes)
+app.use(rateLimiter);
 
 // Health route
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
