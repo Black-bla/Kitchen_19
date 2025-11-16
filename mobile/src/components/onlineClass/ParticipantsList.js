@@ -1,0 +1,1 @@
+// ...ParticipantsList component placeholder

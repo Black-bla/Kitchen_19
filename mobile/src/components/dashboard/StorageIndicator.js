@@ -1,0 +1,1 @@
+// ...StorageIndicator component placeholder

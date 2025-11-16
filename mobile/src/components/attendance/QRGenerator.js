@@ -1,0 +1,1 @@
+// ...QRGenerator (lecturer) component placeholder

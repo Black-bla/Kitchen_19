@@ -47,7 +47,11 @@
           "project": "react-native",
           "organization": "yr-studios"
         }
-      ]
+      ],
+      "expo-web-browser",
+      "expo-secure-store",
+      "expo-barcode-scanner",
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true,

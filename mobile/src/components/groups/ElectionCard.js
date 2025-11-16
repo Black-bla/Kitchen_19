@@ -1,0 +1,1 @@
+// ...ElectionCard component placeholder

@@ -1,0 +1,1 @@
+// ...ElectionManager component placeholder

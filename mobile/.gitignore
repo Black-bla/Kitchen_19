@@ -2,24 +2,41 @@
 
 # dependencies
 node_modules/
+# Node modules
+node_modules/
 
 # Expo
 .expo/
 dist/
 web-build/
+# Expo
+.expo/
+.expo-shared/
 expo-env.d.ts
 
 # Native
 .kotlin/
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 *.orig.*
 *.jks
 *.p8
+# OS
+.DS_Store
+Thumbs.db
 *.p12
 *.key
+# Env
+.env
+.env.*
 *.mobileprovision
 
 # Metro
 .metro-health-check*
+# VSCode
+.vscode/
 
 # debug
 npm-debug.*

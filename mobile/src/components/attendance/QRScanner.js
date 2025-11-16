@@ -1,0 +1,1 @@
+// ...QRScanner component placeholder

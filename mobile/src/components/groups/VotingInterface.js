@@ -1,0 +1,1 @@
+// ...VotingInterface component placeholder
